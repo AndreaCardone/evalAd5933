@@ -57,7 +57,8 @@ target_include_directories(eval_ad5933_program PUBLIC
 
 # Optionally, specify the installation rules
 install(TARGETS ad5933 DESTINATION lib)
-install(FILES include/ad5933.h DESTINATION include)
+install(FILES include/libad5933.h DESTINATION include)
+install(FILES include/types.h DESTINATION include)
 install(FILES ${LIB_CYUSB_DIR}/lib/libcyusb.so DESTINATION lib)
 install(FILES ${LIB_CYUSB_DIR}/include/cyusb.h DESTINATION include)
 
