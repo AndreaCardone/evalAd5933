@@ -10,11 +10,11 @@
 class Ad5933
 {
 private:
-  
-  /**
-   * \brief USB handle for the connected device.
-   */
+
   libusb_device_handle* mpUsbHandle;
+  bool mIsInit;
+  Status_t mStatus;
+  Ad5933Function_t mFunction;
 
   // SWEEP PARAMETERS
   struct SweepParameters_st
@@ -54,11 +54,30 @@ private:
 
   CalibrationParameters_st msCalibrationParameters;
 
-  InternalTemperature_t mInternalTemperature;
+  TemperatureRaw_st mTemperatureRaw;
+  Temperature_t     mTemperature;
+
+  inline int regWrite(uint8_t addr, uint8_t val);
+  inline int regRead(uint8_t reg, uint8_t *val);
+  int readStatus();
+  int reset();
+  
+  void writeStartFrequency();
+  void writeDeltaFrequency();
+  void writeNumSettlingTimeCycles();
+  void writeRefClockFrequency();
+
+  void writeSystemClock();
+  void writeOutputExcitation();
+  void writePgaControl();
+
+  void writeFunction(Ad5933Function_t function);
 
 public:
   Ad5933() : 
     mpUsbHandle(nullptr), 
+    mIsInit(false),
+    mFunction(Ad5933Function_t::NO_OPERATION),
     
     msSweepParameters
     { 
@@ -88,8 +107,14 @@ public:
       .mGainFactor = 0, 
       .mIsGainFactorCalculated = false 
     },
-
-    mInternalTemperature(0)
+    
+    mTemperatureRaw
+    {
+      .temp_msb = 0,
+      .temp_lsb = 0
+    },
+    
+    mTemperature(0)
   {}
 
   ~Ad5933()
@@ -146,7 +171,33 @@ public:
   const bool isGainFactorCalculated() const { return msCalibrationParameters.mIsGainFactorCalculated; }
 
   // Getter method for InternalTemperature
-  const InternalTemperature_t& getInternalTemperature() const { return mInternalTemperature; } 
+  const TemperatureRaw_st& getTemperatureRaw() const { return mTemperatureRaw; }
+  const Temperature_t& getTemperature() const { return mTemperature; }
+
+  // Getter method for status
+  const Status_t& getStatus() const { return mStatus; }
+  // Getter method for function
+  const Ad5933Function_t& getFunction() const {return mFunction; }
+
+  // Device operations
+  void init(unsigned short vid, unsigned short pid);
+  void deinit();
+  void readTemperature();
+  void programDeviceRegisters();
+
+/*
+  uint8_t impedRead(stImpedDataRaw_t *ir);
+  
+  double magnitudeCalc(stImpedDataRaw_t ir);
+  double phaseCalc(stImpedDataRaw_t ir);
+  uint8_t impedCalc(stImpedData_t *imped, double gf);
+  
+  int startFreqCalc(double freq);
+  void sweepSetup();
+  int pollStatus(unsigned int interval, unsigned int maxIter, uint8_t mask);
+  
+  int calculateGainFactor();
+*/
 
 };
 
