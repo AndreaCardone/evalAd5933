@@ -1,4 +1,4 @@
-#AD5933 EVALUATION BOARD SOFTWARE
+# AD5933 EVALUATION BOARD SOFTWARE
 
 The aim of this software is to provide an abstraction layer for the ad5933/ad5934 evaluation board, i.e. abstracting cypress usb bridge and ad5933 i2c interface. 
 
