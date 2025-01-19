@@ -2,15 +2,18 @@
 #define __LIB_AD5933_H
 
 #include <libusb-1.0/libusb.h>
+#include <vector>
 
 #include "cyusb.h"
 
 #include "types.h"
 
+#define INIT_SETTERS_NUMBER  14
+
 class Ad5933
 {
 private:
-
+  std::vector<bool> settersCalled;
   libusb_device_handle* mpUsbHandle;
   bool mIsInit;
   Status_t mStatus;
@@ -65,7 +68,6 @@ private:
   void writeStartFrequency();
   void writeDeltaFrequency();
   void writeNumSettlingTimeCycles();
-  void writeRefClockFrequency();
 
   void writeSystemClock();
   void writeOutputExcitation();
@@ -74,7 +76,8 @@ private:
   void writeFunction(Ad5933Function_t function);
 
 public:
-  Ad5933() : 
+  Ad5933() :
+    settersCalled(INIT_SETTERS_NUMBER, false),
     mpUsbHandle(nullptr), 
     mIsInit(false),
     mFunction(Ad5933Function_t::NO_OPERATION),
@@ -122,6 +125,25 @@ public:
     if (mpUsbHandle)
     {
       mpUsbHandle = nullptr; 
+    }
+  }
+
+  bool areAllSettersCalled() const
+  {
+    for (bool called : settersCalled)
+    {
+      if (!called) {
+        return false; 
+      }
+    }
+    return true;
+  }
+
+  void checkSetters() const
+  {
+    if (!areAllSettersCalled())
+    {
+      throw std::runtime_error("Not all required setters were called.");
     }
   }
 
