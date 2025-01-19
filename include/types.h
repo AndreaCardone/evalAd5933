@@ -91,6 +91,38 @@ typedef struct
   uint8_t imag_lsb;
 } ImpedDataRaw_st;
 
+class ImpedData_ct {
+public:
+    double magnitude; /**< Magnitude of the impedance. */
+    double phase; /**< Phase of the impedance. */
+    double m; /**< Additional parameter for impedance. */
+    double frequency;
+
+    ImpedData_ct() : magnitude(0), phase(0), m(0), frequency(0) {}
+    ImpedData_ct(double mag, double ph, double mt, double freq)
+        : magnitude(mag), phase(ph), m(mt), frequency(freq) {}
+    ImpedData_ct(const ImpedData_ct &other)
+        : magnitude(other.magnitude), phase(other.phase), m(other.m), frequency(other.frequency){}
+
+    ImpedData_ct& operator=(const ImpedData_ct &other) {
+      if (this == &other) return *this; // Handle self-assignment
+      magnitude = other.magnitude;
+      phase = other.phase;
+      m = other.m;
+      frequency = other.frequency;
+      return *this;
+    }
+
+    ~ImpedData_ct() {}
+
+    void display() const {
+        std::cout << "Magnitude: " << magnitude << "\n"
+                  << "Phase: " << phase << "\n"
+                  << "M: " << m << "\n"
+                  << "Frequency: " << frequency << std::endl;
+    }
+};
+
 enum ClockConfiguration_t
 {
   EXTERNAL_CLOCK,
