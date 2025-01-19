@@ -90,6 +90,14 @@ void Ad5933::writeNumSettlingTimeCycles()
   regWrite(AD5933_NUMB_SETT_LSB, lsb);
 }
 
+void Ad5933::writeNumberOfIncrements()
+{
+  uint8_t msb = (getNumberOfIncrements() >> 8) & 0xff;
+  uint8_t lsb = getNumberOfIncrements() & 0xff;
+  regWrite(AD5933_NUMB_INCR_MSB, msb);
+  regWrite(AD5933_NUMB_INCR_LSB, lsb);
+}
+
 void Ad5933::writeSystemClock()
 {
   uint8_t control_reg_lsb = 0;
@@ -201,6 +209,58 @@ void Ad5933::writeFunction(Ad5933Function_t function)
   }
   regWrite(AD5933_CTRL_REG_MSB, control_reg_msb);
 }
+
+void Ad5933::pollStatus(unsigned int interval, unsigned int maxIter, uint8_t mask)
+{
+  unsigned int j = 0;  
+  while ((getStatus() & mask) != mask)
+	{
+    usleep(interval);
+    readStatus();
+    if (j == maxIter)
+		{
+		  throw std::runtime_error("Polling failed.");
+		}
+    j++;
+  }
+}
+
+void Ad5933::readImpedance()
+{
+  regRead(AD5933_REAL_DATA_MSB, &(msImpedDataRaw.real_msb));
+  regRead(AD5933_REAL_DATA_LSB, &(msImpedDataRaw.real_lsb));
+  regRead(AD5933_IMAG_DATA_MSB, &(msImpedDataRaw.imag_msb));
+  regRead(AD5933_IMAG_DATA_LSB, &(msImpedDataRaw.imag_lsb));
+
+  double real = (msImpedDataRaw.real_msb << 8) | (msImpedDataRaw.real_lsb);
+  double imag = (msImpedDataRaw.imag_msb << 8) | (msImpedDataRaw.imag_lsb);
+  double module = sqrt(pow(real,2) + pow(imag,2));
+  double phase = 0;
+
+  if ((real > 0) && (imag > 0)) 
+  {          
+    phase = atan(imag/real)*180/M_PI; // first quadrant
+  }
+  else if ((real < 0) && (imag > 0))
+  {    
+    phase = atan(imag/real)*180/M_PI + 180; // second quadrant
+  }
+  else if ((real < 0) && (imag < 0)) 
+  {     
+    phase = atan(imag/real)*180/M_PI - 180; // third quadrant
+  }
+  else                             
+  {       
+    phase = atan(imag/real)*180/M_PI + 360; // fourth quadrant
+  }
+
+  mcImpedData.m = module;
+  mcImpedData.phase = phase;
+  if (msCalibrationParameters.mIsGainFactorCalculated)
+  {
+    mcImpedData.magnitude = 1/(module*msCalibrationParameters.mGainFactor);
+  }
+}
 // Public methods
 
 void Ad5933::init(unsigned short vid, unsigned short pid)
@@ -250,32 +310,41 @@ void Ad5933::readTemperature()
 
   int i = 0;
   readStatus();
-  while ((mStatus & MASK_STS_TEMP_VALID) != MASK_STS_TEMP_VALID)
-  {
-    if(i > 1000)
-    {
-      throw std::runtime_error("Unable to read temperature within 1 s\n");
-    }
-    readStatus();
-    usleep(1000);
-    i++;
-  }
+  pollStatus(100, 1000, MASK_STS_TEMP_VALID);
+  regRead(AD5933_TEMP_DATA_MSB, &msTemperatureRaw.temp_msb);
+  regRead(AD5933_TEMP_DATA_LSB, &msTemperatureRaw.temp_lsb);
 
-  regRead(AD5933_TEMP_DATA_MSB, &mTemperatureRaw.temp_msb);
-  regRead(AD5933_TEMP_DATA_LSB, &mTemperatureRaw.temp_lsb);
-
-  if (mTemperatureRaw.temp_msb >> 5)
-    mTemperature = ((((mTemperatureRaw.temp_msb & 0xff) << 8) | (mTemperatureRaw.temp_lsb & 0xff)) - 16384) >> 5;
+  if (msTemperatureRaw.temp_msb >> 5)
+    mTemperature = ((((msTemperatureRaw.temp_msb & 0xff) << 8) | (msTemperatureRaw.temp_lsb & 0xff)) - 16384) >> 5;
   else
-    mTemperature = (((mTemperatureRaw.temp_msb & 0xff) << 8) |  (mTemperatureRaw.temp_lsb & 0xff)) >> 5;
+    mTemperature = (((msTemperatureRaw.temp_msb & 0xff) << 8) |  (msTemperatureRaw.temp_lsb & 0xff)) >> 5;
 }
 
 void Ad5933::programDeviceRegisters()
 {
   writeStartFrequency();
   writeDeltaFrequency();
+  writeNumberOfIncrements();
   writeNumSettlingTimeCycles();
   writeSystemClock();
   writeOutputExcitation();
   writePgaControl();
+}
+
+void Ad5933::startSweep()
+{
+  writeFunction(Ad5933Function_t::STANDBY_MODE);
+  writeFunction(Ad5933Function_t::INIT_WITH_START_FREQ);
+  writeFunction(Ad5933Function_t::START_FREQ_SWEEP);
+
+  unsigned int i = 0;
+  while ((getStatus() & MASK_STS_FRQ_SWP_DONE) != MASK_STS_FRQ_SWP_DONE)
+  {
+    pollStatus(100, 1000, MASK_STS_IMPED_VALID);
+    readImpedance();
+    fprintf(stdout, "%u Module: %f\n", i, getImped().m);
+    writeFunction(Ad5933Function_t::INCREMENT_FREQUENCY);
+    readStatus();
+    i++;
+  }
 }
