@@ -57,8 +57,11 @@ private:
 
   CalibrationParameters_st msCalibrationParameters;
 
-  TemperatureRaw_st mTemperatureRaw;
+  TemperatureRaw_st msTemperatureRaw;
   Temperature_t     mTemperature;
+
+  ImpedDataRaw_st msImpedDataRaw;
+  ImpedData_ct mcImpedData;
 
   inline int regWrite(uint8_t addr, uint8_t val);
   inline int regRead(uint8_t reg, uint8_t *val);
@@ -67,6 +70,7 @@ private:
   
   void writeStartFrequency();
   void writeDeltaFrequency();
+  void writeNumberOfIncrements();
   void writeNumSettlingTimeCycles();
 
   void writeSystemClock();
@@ -74,6 +78,9 @@ private:
   void writePgaControl();
 
   void writeFunction(Ad5933Function_t function);
+  void pollStatus(unsigned int interval, unsigned int maxIter, uint8_t mask);
+
+  void readImpedance();
 
 public:
   Ad5933() :
@@ -111,13 +118,23 @@ public:
       .mIsGainFactorCalculated = false 
     },
     
-    mTemperatureRaw
+    msTemperatureRaw
     {
       .temp_msb = 0,
       .temp_lsb = 0
     },
     
-    mTemperature(0)
+    mTemperature(0),
+
+    msImpedDataRaw
+    {
+      .real_msb = 0,
+      .real_lsb = 0,
+      .imag_msb = 0,
+      .imag_lsb = 0
+    },
+
+    mcImpedData()
   {}
 
   ~Ad5933()
@@ -193,8 +210,12 @@ public:
   const bool isGainFactorCalculated() const { return msCalibrationParameters.mIsGainFactorCalculated; }
 
   // Getter method for InternalTemperature
-  const TemperatureRaw_st& getTemperatureRaw() const { return mTemperatureRaw; }
+  const TemperatureRaw_st& getTemperatureRaw() const { return msTemperatureRaw; }
   const Temperature_t& getTemperature() const { return mTemperature; }
+
+  // Getter for impedance calculation
+  const ImpedDataRaw_st& getImpedRaw() const { return msImpedDataRaw; }
+  const ImpedData_ct& getImped() const { return mcImpedData; }
 
   // Getter method for status
   const Status_t& getStatus() const { return mStatus; }
@@ -206,6 +227,9 @@ public:
   void deinit();
   void readTemperature();
   void programDeviceRegisters();
+  void startSweep();
+
+  
 
 /*
   uint8_t impedRead(stImpedDataRaw_t *ir);
