@@ -258,7 +258,23 @@ void Ad5933::readImpedance()
   mcImpedData.phase = phase;
   if (msCalibrationParameters.mIsGainFactorCalculated)
   {
-    mcImpedData.magnitude = 1/(module*msCalibrationParameters.mGainFactor);
+    switch (msCalibrationParameters.mCalibrationMode)
+    {
+    case CalibrationMode_t::MID_POINT:
+    {
+      mcImpedData.magnitude = 1/(module*msCalibrationParameters.mGainFactor);
+      break;
+    }
+    case CalibrationMode_t::MULTI_POINT:
+    {
+      double pointGainFactor = msCalibrationParameters.mGainFactor + msCalibrationParameters.mDeltaGainFactorRate*(mcImpedData.frequency - msSweepParameters.mStartFrequency);
+      mcImpedData.magnitude = 1/(module*msCalibrationParameters.mGainFactor);
+      break;
+    }
+    default:
+      break;
+    }
+    
   }
 }
 // Public methods
@@ -333,18 +349,72 @@ void Ad5933::programDeviceRegisters()
 
 void Ad5933::startSweep()
 {
+  mImpedanceDataVector.clear();
   writeFunction(Ad5933Function_t::STANDBY_MODE);
   writeFunction(Ad5933Function_t::INIT_WITH_START_FREQ);
   writeFunction(Ad5933Function_t::START_FREQ_SWEEP);
 
   unsigned int i = 0;
+  readStatus();
+  printf("calibrated: %d\n", msCalibrationParameters.mIsGainFactorCalculated);
+  printf("gf: %.10e\n", msCalibrationParameters.mGainFactor);
   while ((getStatus() & MASK_STS_FRQ_SWP_DONE) != MASK_STS_FRQ_SWP_DONE)
   {
     pollStatus(100, 1000, MASK_STS_IMPED_VALID);
+    mcImpedData.frequency = msSweepParameters.mStartFrequency + msSweepParameters.mDeltaFrequency*i;
     readImpedance();
-    fprintf(stdout, "%u Module: %f\n", i, getImped().m);
+    printf("%d\n", i);
+    mImpedanceDataVector.push_back(mcImpedData);
+    mcImpedData.display();
+    printf("\n");
     writeFunction(Ad5933Function_t::INCREMENT_FREQUENCY);
     readStatus();
     i++;
   }
+  writeFunction(Ad5933Function_t::POWER_DOWN_MODE);
+}
+
+void Ad5933::doCalibration()
+{
+  assert(!mImpedanceDataVector.empty());
+
+  ImpedData_ct midpointImpedance;
+  ImpedData_ct startpointImpedance;
+  ImpedData_ct endpointImpedance;
+  switch (msCalibrationParameters.mCalibrationCircuitType)
+  case CalibrationCircuitType_t::RES_ONLY:
+  {
+    switch (msCalibrationParameters.mCalibrationMode)
+    {
+    case CalibrationMode_t::MID_POINT :
+    {
+      midpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()/2)];
+      msCalibrationParameters.mGainFactor = 1/(midpointImpedance.m * msCalibrationParameters.mR1);
+      break;
+    }
+    case CalibrationMode_t::MULTI_POINT:
+    {
+      startpointImpedance = mImpedanceDataVector[1]; // sometimes first sample may not be reliable
+      endpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()-1)];
+      double startpointGf = 1/(startpointImpedance.m * msCalibrationParameters.mR1);
+      double endpointGf = 1/(endpointImpedance.m * msCalibrationParameters.mR1);
+      msCalibrationParameters.mGainFactor = startpointGf;
+      msCalibrationParameters.mDeltaGainFactorRate = (endpointGf - startpointGf)/(endpointImpedance.frequency - startpointImpedance.frequency);
+      break;
+    }
+    default:
+      throw std::invalid_argument("Unknown calibration mode.");
+    }
+    break;
+  case CalibrationCircuitType_t::CAP_ONLY:
+  case CalibrationCircuitType_t::RES_CAP_SERIES:
+  case CalibrationCircuitType_t::RES_CAP_PARALLEL:
+  case CalibrationCircuitType_t::COMPLEX_CIRCUIT:
+    throw std::invalid_argument("Calibration circuit type not yet supported.");
+    break;
+  default:
+    throw std::invalid_argument("Unknown calibration circuit type.");
+    break;
+  }
+  msCalibrationParameters.mIsGainFactorCalculated = true;
 }
