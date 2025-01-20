@@ -3,6 +3,7 @@
 
 #include <libusb-1.0/libusb.h>
 #include <vector>
+#include <cassert>
 
 #include "cyusb.h"
 
@@ -18,6 +19,7 @@ private:
   bool mIsInit;
   Status_t mStatus;
   Ad5933Function_t mFunction;
+  std::vector<ImpedData_ct> mImpedanceDataVector;
 
   // SWEEP PARAMETERS
   struct SweepParameters_st
@@ -52,6 +54,7 @@ private:
     ResistorValue_t mR2;
     CapacitorValue_t mC1;
     GainFactor_t mGainFactor;
+    double mDeltaGainFactorRate;
     bool mIsGainFactorCalculated;
   };
 
@@ -88,6 +91,7 @@ public:
     mpUsbHandle(nullptr), 
     mIsInit(false),
     mFunction(Ad5933Function_t::NO_OPERATION),
+    mImpedanceDataVector(),
     
     msSweepParameters
     { 
@@ -115,6 +119,7 @@ public:
       .mR2 = 0, 
       .mC1 = 0, 
       .mGainFactor = 0, 
+      .mDeltaGainFactorRate = 0,
       .mIsGainFactorCalculated = false 
     },
     
@@ -207,6 +212,7 @@ public:
   const ResistorValue_t& getR2() const { return msCalibrationParameters.mR2; }
   const CapacitorValue_t& getC1() const { return msCalibrationParameters.mC1; }
   const GainFactor_t& getGainFactor() const { return msCalibrationParameters.mGainFactor; }
+  const GainFactor_t& getDeltaGainFactor() const { return msCalibrationParameters.mDeltaGainFactorRate; }
   const bool isGainFactorCalculated() const { return msCalibrationParameters.mIsGainFactorCalculated; }
 
   // Getter method for InternalTemperature
@@ -228,6 +234,7 @@ public:
   void readTemperature();
   void programDeviceRegisters();
   void startSweep();
+  void doCalibration();
 
   
 
