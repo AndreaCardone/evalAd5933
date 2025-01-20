@@ -26,9 +26,9 @@ int main()
   sleep(1);
   
   // settings
-  ad5933.setStartFrequency(1000);
+  ad5933.setStartFrequency(3500);
   ad5933.setDeltaFrequency(500);
-  ad5933.setNumberOfIncrements(200);
+  ad5933.setNumberOfIncrements(10);
   ad5933.setNumberSettlingTimeCycles(15);
   ad5933.setRefClockFrequency(16000000);
   ad5933.setClockConfiguration(ClockConfiguration_t::EXTERNAL_CLOCK);
@@ -37,14 +37,18 @@ int main()
   ad5933.setCalibrationCircuitType(CalibrationCircuitType_t::RES_ONLY);
   ad5933.setR1(10000);
   ad5933.setDdsSettlingTimeCycles(DdsSettlingTimeCycles_t::DEFAULT_X1);
-  ad5933.setCalibrationMode(CalibrationMode_t::MID_POINT);
+  ad5933.setCalibrationMode(CalibrationMode_t::MULTI_POINT);
 
   // program device registers
   ad5933.programDeviceRegisters();
   
   fprintf(stdout, "Start sweep\n");
   ad5933.startSweep();
-
+  fprintf(stdout, "Start calibration\n");
+  ad5933.doCalibration();
+  fprintf(stdout, "Start sweep\n");
+  ad5933.programDeviceRegisters();
+  ad5933.startSweep();
   ad5933.deinit();
   
   
