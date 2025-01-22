@@ -274,7 +274,10 @@ void Ad5933::readImpedance()
     default:
       break;
     }
-    
+  }
+  else
+  {
+    mcImpedData.magnitude = module;
   }
 }
 // Public methods
@@ -396,6 +399,7 @@ void Ad5933::doCalibration()
     {
       startpointImpedance = mImpedanceDataVector[1]; // sometimes first sample may not be reliable
       endpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()-1)];
+      //endpointImpedance = mImpedanceDataVector[2];
       double startpointGf = 1/(startpointImpedance.m * msCalibrationParameters.mR1);
       double endpointGf = 1/(endpointImpedance.m * msCalibrationParameters.mR1);
       msCalibrationParameters.mGainFactor = startpointGf;
@@ -417,4 +421,25 @@ void Ad5933::doCalibration()
     break;
   }
   msCalibrationParameters.mIsGainFactorCalculated = true;
+}
+
+void Ad5933::saveData()
+{
+  FILE *fd;
+
+	if((fd = fopen("imped_data.csv", "a+")) == NULL)
+	{
+		throw std::runtime_error("Error opening file for writing!\n");
+	}
+
+  int t = 0;
+  ImpedData_ct imped;
+  for(unsigned int i = 0; i < mImpedanceDataVector.size(); i++)
+  {
+    imped = mImpedanceDataVector[i];
+    fprintf(fd, "%d,%f,%f,%f\n", t, imped.frequency, imped.magnitude, imped.phase);
+    t++;
+  }
+
+	fclose(fd);
 }
