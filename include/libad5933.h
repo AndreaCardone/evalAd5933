@@ -235,23 +235,7 @@ public:
   void programDeviceRegisters();
   void startSweep();
   void doCalibration();
-
-  
-
-/*
-  uint8_t impedRead(stImpedDataRaw_t *ir);
-  
-  double magnitudeCalc(stImpedDataRaw_t ir);
-  double phaseCalc(stImpedDataRaw_t ir);
-  uint8_t impedCalc(stImpedData_t *imped, double gf);
-  
-  int startFreqCalc(double freq);
-  void sweepSetup();
-  int pollStatus(unsigned int interval, unsigned int maxIter, uint8_t mask);
-  
-  int calculateGainFactor();
-*/
-
+  void saveData();
 };
 
 #endif

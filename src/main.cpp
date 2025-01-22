@@ -27,47 +27,30 @@ int main()
   
   // settings
   ad5933.setStartFrequency(3500);
-  ad5933.setDeltaFrequency(500);
-  ad5933.setNumberOfIncrements(10);
-  ad5933.setNumberSettlingTimeCycles(15);
+  ad5933.setDeltaFrequency(50);
+  ad5933.setNumberOfIncrements(100);
+  ad5933.setNumberSettlingTimeCycles(50);
   ad5933.setRefClockFrequency(16000000);
   ad5933.setClockConfiguration(ClockConfiguration_t::EXTERNAL_CLOCK);
-  ad5933.setOutputExcitation(OutputExcitation_t::RANGE_2VPP);
+  ad5933.setOutputExcitation(OutputExcitation_t::RANGE_1VPP);
   ad5933.setPgaControl(PgaControl_t::GAIN_X1);
   ad5933.setCalibrationCircuitType(CalibrationCircuitType_t::RES_ONLY);
   ad5933.setR1(10000);
   ad5933.setDdsSettlingTimeCycles(DdsSettlingTimeCycles_t::DEFAULT_X1);
-  ad5933.setCalibrationMode(CalibrationMode_t::MULTI_POINT);
+  ad5933.setCalibrationMode(CalibrationMode_t::MID_POINT);
 
   // program device registers
   ad5933.programDeviceRegisters();
   
   fprintf(stdout, "Start sweep\n");
   ad5933.startSweep();
+  //ad5933.saveData();
   fprintf(stdout, "Start calibration\n");
   ad5933.doCalibration();
   fprintf(stdout, "Start sweep\n");
   ad5933.programDeviceRegisters();
   ad5933.startSweep();
+  ad5933.saveData();
   ad5933.deinit();
-  
-  
-  /*
-  sleep(1);
-
-  std::vector<stImpedData_t> *sweepImpedData = new std::vector<stImpedData_t>(FREQ_STEP*NUM_SAMPLES);
-
-  double gainFactor = 1;
-  
-  AcquisitionHelper acquisitionHelper(&ad5933);
-
-  acquisitionHelper.collectData(gainFactor, *sweepImpedData);
-
-  double gf0 = 1/(AD5933_RES_CALIB_VAL * (*sweepImpedData)[1].m);
-
-  //acquisitionHelper.collectData(gf0*10e9, *sweepImpedData);
-  */
-  
-
   return 0;
 }
