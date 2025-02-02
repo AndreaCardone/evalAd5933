@@ -8,7 +8,7 @@
 
 #include "cyusb.h"
 
-#include "types.h"
+#include "ad5933types.h"
 
 #define INIT_SETTERS_NUMBER  14
 
