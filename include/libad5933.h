@@ -17,6 +17,7 @@ private:
   std::vector<bool> settersCalled;
   libusb_device_handle* mpUsbHandle;
   bool mIsInit;
+  bool mIsFirmwareDownloaded;
   Status_t mStatus;
   Ad5933Function_t mFunction;
   std::vector<ImpedData_ct> mImpedanceDataVector;
