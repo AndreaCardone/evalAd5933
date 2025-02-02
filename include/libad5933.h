@@ -4,6 +4,7 @@
 #include <libusb-1.0/libusb.h>
 #include <vector>
 #include <cassert>
+#include <string>
 
 #include "cyusb.h"
 
@@ -14,185 +15,113 @@
 class Ad5933
 {
 private:
-  std::vector<bool> settersCalled;
   libusb_device_handle* mpUsbHandle;
+  UserParameters_st* mpUserParameters;
+
   bool mIsInit;
   bool mIsFirmwareDownloaded;
+  bool mAreRegistersProgrammed;
+  bool mIsGainFactorCalculated;
+
+  double mGainFactor;
+  double mDeltaGainFactorRate;
+
   Status_t mStatus;
-  Ad5933Function_t mFunction;
-  std::vector<ImpedData_ct> mImpedanceDataVector;
 
-  SystemParameters_st msSystemParameters;
-  SweepParameters_st msSweepParameters;
-  CalibrationParameters_st msCalibrationParameters;
-
-  TemperatureRaw_st msTemperatureRaw;
-  Temperature_t     mTemperature;
-
-  ImpedDataRaw_st msImpedDataRaw;
-  ImpedData_ct mcImpedData;
+  ImpedanceDataVector_t mImpedanceDataVector;
 
   inline int regWrite(uint8_t addr, uint8_t val);
   inline int regRead(uint8_t reg, uint8_t *val);
-  int readStatus();
-  int reset();
   
   void writeStartFrequency();
   void writeDeltaFrequency();
   void writeNumberOfIncrements();
   void writeNumSettlingTimeCycles();
-
   void writeSystemClock();
   void writeOutputExcitation();
   void writePgaControl();
-
   void writeFunction(Ad5933Function_t function);
+  
+  int readStatus();
   void pollStatus(unsigned int interval, unsigned int maxIter, uint8_t mask);
-
   void readImpedance();
+  int reset();
 
 public:
   Ad5933() :
-    settersCalled(INIT_SETTERS_NUMBER, false),
     mpUsbHandle(nullptr), 
+    mpUserParameters(nullptr),
+    
     mIsInit(false),
-    mFunction(Ad5933Function_t::NO_OPERATION),
-    mImpedanceDataVector(),
+    mIsFirmwareDownloaded(false),
+    mAreRegistersProgrammed(false),
+    mIsGainFactorCalculated(false),
     
-    msSweepParameters
-    { 
-      .mRefClockFrequency = 0, 
-      .mStartFrequency = 0, 
-      .mDeltaFrequency = 0, 
-      .mNumberOfIncrements = 0, 
-      .mNumberSettlingTimeCycles = 0, 
-      .mDdsSettlingTimeCycles = DdsSettlingTimeCycles_t::DEFAULT_X1
-    },
-      
-    msSystemParameters
-    { 
-      .mClockConfiguration = ClockConfiguration_t::EXTERNAL_CLOCK, 
-      .mOutputExcitation = OutputExcitation_t::RANGE_2VPP, 
-      .mPgaControl = PgaControl_t::GAIN_X1, 
-      .mAreRegistersProgrammed = false 
-    },
-      
-    msCalibrationParameters
-    { 
-      .mCalibrationCircuitType = CalibrationCircuitType_t::RES_ONLY, 
-      .mCalibrationMode = CalibrationMode_t::MID_POINT, 
-      .mR1 = 0, 
-      .mR2 = 0, 
-      .mC1 = 0, 
-      .mGainFactor = 0, 
-      .mDeltaGainFactorRate = 0,
-      .mIsGainFactorCalculated = false 
-    },
+    mGainFactor(0),
+    mDeltaGainFactorRate(0),
     
-    msTemperatureRaw
-    {
-      .temp_msb = 0,
-      .temp_lsb = 0
-    },
-    
-    mTemperature(0),
-
-    msImpedDataRaw
-    {
-      .real_msb = 0,
-      .real_lsb = 0,
-      .imag_msb = 0,
-      .imag_lsb = 0
-    },
-
-    mcImpedData()
+    mStatus(0)
   {}
 
   ~Ad5933()
   {
-    if (mpUsbHandle)
+    if(mpUsbHandle)
     {
       mpUsbHandle = nullptr; 
     }
-  }
-
-  bool areAllSettersCalled() const
-  {
-    for (bool called : settersCalled)
+    if(mpUserParameters)
     {
-      if (!called) {
-        return false; 
-      }
-    }
-    return true;
-  }
-
-  void checkSetters() const
-  {
-    if (!areAllSettersCalled())
-    {
-      throw std::runtime_error("Not all required setters were called.");
+      mpUserParameters = nullptr;
     }
   }
 
   // Setter methods for SweepParameters
-  void setRefClockFrequency(Frequency_t frequency) { msSweepParameters.mRefClockFrequency = frequency; }
-  void setStartFrequency(Frequency_t frequency) { msSweepParameters.mStartFrequency = frequency; }
-  void setDeltaFrequency(Frequency_t frequency) { msSweepParameters.mDeltaFrequency = frequency; }
-  void setNumberOfIncrements(unsigned int increments) { msSweepParameters.mNumberOfIncrements = increments; }
-  void setNumberSettlingTimeCycles(unsigned int cycles) { msSweepParameters.mNumberSettlingTimeCycles = cycles; }
-  void setDdsSettlingTimeCycles(DdsSettlingTimeCycles_t cycles) { msSweepParameters.mDdsSettlingTimeCycles = cycles; }
+  void setRefClockFrequency(Frequency_t frequency) {mpUserParameters->mRefClockFrequency = frequency; }
+  void setStartFrequency(Frequency_t frequency) { mpUserParameters->mStartFrequency = frequency; }
+  void setDeltaFrequency(Frequency_t frequency) { mpUserParameters->mDeltaFrequency = frequency; }
+  void setNumberOfIncrements(unsigned int increments) { mpUserParameters->mNumberOfIncrements = increments; }
+  void setNumberSettlingTimeCycles(unsigned int cycles) { mpUserParameters->mNumberSettlingTimeCycles = cycles; }
+  void setDdsSettlingTimeCycles(DdsSettlingTimeCycles_t cycles) { mpUserParameters->mDdsSettlingTimeCycles = cycles; }
 
   // Setter methods for SystemParameters
-  void setClockConfiguration(ClockConfiguration_t config) { msSystemParameters.mClockConfiguration = config; }
-  void setOutputExcitation(OutputExcitation_t excitation) { msSystemParameters.mOutputExcitation = excitation; }
-  void setPgaControl(PgaControl_t control) { msSystemParameters.mPgaControl = control; }
+  void setClockConfiguration(ClockConfiguration_t config) { mpUserParameters->mClockConfiguration = config; }
+  void setOutputExcitation(OutputExcitation_t excitation) { mpUserParameters->mOutputExcitation = excitation; }
+  void setPgaControl(PgaControl_t control) { mpUserParameters->mPgaControl = control; }
 
   // Setter methods for CalibrationParameters
-  void setCalibrationCircuitType(CalibrationCircuitType_t type) { msCalibrationParameters.mCalibrationCircuitType = type; }
-  void setCalibrationMode(CalibrationMode_t mode) { msCalibrationParameters.mCalibrationMode = mode; }
-  void setR1(ResistorValue_t r1) { msCalibrationParameters.mR1 = r1; }
-  void setR2(ResistorValue_t r2) { msCalibrationParameters.mR2 = r2; }
-  void setC1(CapacitorValue_t c1) { msCalibrationParameters.mC1 = c1; }
-  void setGainFactor(GainFactor_t gain) { msCalibrationParameters.mGainFactor = gain; }
-  void setGainFactorCalculated(bool calculated) { msCalibrationParameters.mIsGainFactorCalculated = calculated; }
+  void setCalibrationCircuitType(CalibrationCircuitType_t type) { mpUserParameters->mCalibrationCircuitType = type; }
+  void setCalibrationMode(CalibrationMode_t mode) { mpUserParameters->mCalibrationMode = mode; }
+  void setR1(ResistorValue_t r1) { mpUserParameters->mR1 = r1; }
+  void setR2(ResistorValue_t r2) { mpUserParameters->mR2 = r2; }
+  void setC1(CapacitorValue_t c1) { mpUserParameters->mC1 = c1; }
 
   // Getter methods for SweepParameters
-  const Frequency_t& getRefClockFrequency() const { return msSweepParameters.mRefClockFrequency; }
-  const Frequency_t& getStartFrequency() const { return msSweepParameters.mStartFrequency; }
-  const Frequency_t& getDeltaFrequency() const { return msSweepParameters.mDeltaFrequency; }
-  const unsigned int& getNumberOfIncrements() const { return msSweepParameters.mNumberOfIncrements; }
-  const unsigned int& getNumberSettlingTimeCycles() const { return msSweepParameters.mNumberSettlingTimeCycles; }
-  const DdsSettlingTimeCycles_t& getDdsSettlingTimeCycles() const { return msSweepParameters.mDdsSettlingTimeCycles; }
+  const Frequency_t& getRefClockFrequency() const { return mpUserParameters->mRefClockFrequency; }
+  const Frequency_t& getStartFrequency() const { return mpUserParameters->mStartFrequency; }
+  const Frequency_t& getDeltaFrequency() const { return mpUserParameters->DeltaFrequency; }
+  const unsigned int& getNumberOfIncrements() const { return mpUserParameters->mNumberOfIncrements; }
+  const unsigned int& getNumberSettlingTimeCycles() const { return mpUserParameters->mNumberSettlingTimeCycles; }
+  const DdsSettlingTimeCycles_t& getDdsSettlingTimeCycles() const { return mpUserParameters->mDdsSettlingTimeCycles; }
 
   // Getter methods for SystemParameters
-  const ClockConfiguration_t& getClockConfiguration() const { return msSystemParameters.mClockConfiguration; }
-  const OutputExcitation_t& getOutputExcitation() const { return msSystemParameters.mOutputExcitation; }
-  const PgaControl_t& getPgaControl() const { return msSystemParameters.mPgaControl; }
-  const bool areRegistersProgrammed() const { return msSystemParameters.mAreRegistersProgrammed; }
+  const ClockConfiguration_t& getClockConfiguration() const { return mpUserParameters->mClockConfiguration; }
+  const OutputExcitation_t& getOutputExcitation() const { return mpUserParameters->mOutputExcitation; }
+  const PgaControl_t& getPgaControl() const { return mpUserParameters->mPgaControl; }
 
   // Getter methods for CalibrationParameters
-  const CalibrationCircuitType_t& getCalibrationCircuitType() const { return msCalibrationParameters.mCalibrationCircuitType; }
-  const CalibrationMode_t& getCalibrationMode() const { return msCalibrationParameters.mCalibrationMode; }
-  const ResistorValue_t& getR1() const { return msCalibrationParameters.mR1; }
-  const ResistorValue_t& getR2() const { return msCalibrationParameters.mR2; }
-  const CapacitorValue_t& getC1() const { return msCalibrationParameters.mC1; }
-  const GainFactor_t& getGainFactor() const { return msCalibrationParameters.mGainFactor; }
-  const GainFactor_t& getDeltaGainFactor() const { return msCalibrationParameters.mDeltaGainFactorRate; }
-  const bool isGainFactorCalculated() const { return msCalibrationParameters.mIsGainFactorCalculated; }
-
-  // Getter method for InternalTemperature
-  const TemperatureRaw_st& getTemperatureRaw() const { return msTemperatureRaw; }
-  const Temperature_t& getTemperature() const { return mTemperature; }
-
-  // Getter for impedance calculation
-  const ImpedDataRaw_st& getImpedRaw() const { return msImpedDataRaw; }
-  const ImpedData_ct& getImped() const { return mcImpedData; }
+  const CalibrationCircuitType_t& getCalibrationCircuitType() const { return mpUserParameters->mCalibrationCircuitType; }
+  const CalibrationMode_t& getCalibrationMode() const { return mpUserParameters->mCalibrationMode; }
+  const ResistorValue_t& getR1() const { return mpUserParameters->mR1; }
+  const ResistorValue_t& getR2() const { return mpUserParameters->mR2; }
+  const CapacitorValue_t& getC1() const { return mpUserParameters->mC1; }
+  const GainFactor_t& getGainFactor() const { return mGainFactor; }
+  const GainFactor_t& getDeltaGainFactor() const { return mDeltaGainFactorRate; }
 
   // Getter method for status
   const Status_t& getStatus() const { return mStatus; }
-  // Getter method for function
-  const Ad5933Function_t& getFunction() const {return mFunction; }
+  
+  // Getter method for impedance data vector
+  const ImpedanceDataVector_t& getImpedanceDataVector() const { return  mImpedanceDataVector};
 
   // Device operations
   void connect(unsigned short vid, unsigned short pid); 
@@ -202,7 +131,7 @@ public:
   void programDeviceRegisters();
   void startSweep();
   void doCalibration();
-  void saveData();
+  void saveData(string filename);
 };
 
 #endif

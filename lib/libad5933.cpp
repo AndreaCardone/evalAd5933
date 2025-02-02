@@ -305,9 +305,8 @@ void Ad5933::connect(unsigned short vid, unsigned short pid)
   }
 }
 
-void Ad5933::init(UserParameters_st userParameters)
+void Ad5933::init(UserParameters_st& userParameters)
 {
-    
   // Set sweep parameters
   setRefClockFrequency(userParameters.mRefClockFrequency); 
   setStartFrequency(userParameters.mStartFrequency);
@@ -327,6 +326,8 @@ void Ad5933::init(UserParameters_st userParameters)
   setR1(userParameters.mR1);
   setR2(userParameters.mR2);
   setC1(userParameters.mC1);
+  
+  mIsInit = true;
 }
 
 void Ad5933::deinit()
