@@ -282,7 +282,7 @@ void Ad5933::readImpedance()
 }
 // Public methods
 
-void Ad5933::init(unsigned short vid, unsigned short pid)
+void Ad5933::connect(unsigned short vid, unsigned short pid)
 {
   int res;
   res = cyusb_open(vid, pid);

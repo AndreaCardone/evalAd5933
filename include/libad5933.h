@@ -195,6 +195,7 @@ public:
   const Ad5933Function_t& getFunction() const {return mFunction; }
 
   // Device operations
+  void connect(unsigned short vid, unsigned short pid); 
   void init(unsigned short vid, unsigned short pid);
   void deinit();
   void readTemperature();
