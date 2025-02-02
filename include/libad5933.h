@@ -27,7 +27,9 @@ private:
   double mDeltaGainFactorRate;
 
   Status_t mStatus;
-
+  
+  ImpedDataRaw_st msImpedDataRaw; 
+  ImpedData_ct mcImpedData;
   ImpedanceDataVector_t mImpedanceDataVector;
 
   inline int regWrite(uint8_t addr, uint8_t val);
@@ -98,7 +100,7 @@ public:
   // Getter methods for SweepParameters
   const Frequency_t& getRefClockFrequency() const { return mpUserParameters->mRefClockFrequency; }
   const Frequency_t& getStartFrequency() const { return mpUserParameters->mStartFrequency; }
-  const Frequency_t& getDeltaFrequency() const { return mpUserParameters->DeltaFrequency; }
+  const Frequency_t& getDeltaFrequency() const { return mpUserParameters->mDeltaFrequency; }
   const unsigned int& getNumberOfIncrements() const { return mpUserParameters->mNumberOfIncrements; }
   const unsigned int& getNumberSettlingTimeCycles() const { return mpUserParameters->mNumberSettlingTimeCycles; }
   const DdsSettlingTimeCycles_t& getDdsSettlingTimeCycles() const { return mpUserParameters->mDdsSettlingTimeCycles; }
@@ -121,17 +123,17 @@ public:
   const Status_t& getStatus() const { return mStatus; }
   
   // Getter method for impedance data vector
-  const ImpedanceDataVector_t& getImpedanceDataVector() const { return  mImpedanceDataVector};
+  const ImpedanceDataVector_t& getImpedanceDataVector() const { return  mImpedanceDataVector; }
 
   // Device operations
   void connect(unsigned short vid, unsigned short pid); 
-  void init(UserParameters_st& userParameters);
+  void init(UserParameters_st* userParameters);
   void deinit();
-  void readTemperature();
+  Temperature_t readTemperature();
   void programDeviceRegisters();
   void startSweep();
   void doCalibration();
-  void saveData(string filename);
+  void saveData(const char* filename);
 };
 
 #endif
