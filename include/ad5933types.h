@@ -1,9 +1,10 @@
-#ifndef __TYPES_H
-#define __TYPES_H
+#ifndef __AD5933_TYPES_H
+#define __AD5933_TYPES_H
 
 #include <stdint.h>
 #include <iostream>
 #include <stdexcept>
+#include <vector>
 
 // Registers
 #define AD5933_CTRL_REG_MSB        0x80
@@ -186,6 +187,32 @@ typedef double Frequency_t;
 typedef double GainFactor_t;
 typedef double Temperature_t;
 typedef uint8_t Status_t;
+typedef std::vector<ImpedData_ct> ImpedanceDataVector_t;
+
+// USER PARAMETERS
+struct UserParameters_st
+{ 
+  // Sweep parameters
+  Frequency_t mRefClockFrequency; // Hz
+  Frequency_t mStartFrequency; // Hz
+  Frequency_t mDeltaFrequency; // Hz
+  unsigned int mNumberOfIncrements; // 9 bits
+  unsigned int mNumberSettlingTimeCycles;
+  DdsSettlingTimeCycles_t mDdsSettlingTimeCycles;
+ 
+  // System parameters
+  ClockConfiguration_t mClockConfiguration;
+  OutputExcitation_t mOutputExcitation;
+  PgaControl_t mPgaControl;
+  
+  // Calibration parameters
+  CalibrationCircuitType_t mCalibrationCircuitType;
+  CalibrationMode_t mCalibrationMode;
+  ResistorValue_t mR1;
+  ResistorValue_t mR2;
+  CapacitorValue_t mC1;
+};
+
 
 class CyusbError : public std::runtime_error {
 public:

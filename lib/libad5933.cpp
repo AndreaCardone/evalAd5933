@@ -25,7 +25,7 @@ int Ad5933::reset()
   uint8_t ctrl_lsb = 0;
   regRead(AD5933_CTRL_REG_LSB, &ctrl_lsb);
   ctrl_lsb |= MASK_CTRL_RESET;
-  return regWrite(AD5933_CTRL_REG_LSB, ctrl_lsb);;
+  return regWrite(AD5933_CTRL_REG_LSB, ctrl_lsb);
 }
 
 void Ad5933::writeStartFrequency()
@@ -35,7 +35,7 @@ void Ad5933::writeStartFrequency()
   uint8_t f2 = 0;
   uint8_t f3 = 0;
 
-  freq_code = static_cast<unsigned int>((msSweepParameters.mStartFrequency/(msSweepParameters.mRefClockFrequency/4))*pow(2,27));
+  freq_code = static_cast<unsigned int>((mpUserParameters->mStartFrequency/(mpUserParameters->mRefClockFrequency/4))*pow(2,27));
 
   f1 = (freq_code >> 16) & 0xff;
   f2 = (freq_code >> 8) & 0xff;
@@ -54,7 +54,7 @@ void Ad5933::writeDeltaFrequency()
   uint8_t f3 = 0;
   int ret = 0;
 
-  step_code = static_cast<unsigned int>(msSweepParameters.mDeltaFrequency/(msSweepParameters.mRefClockFrequency/4)*pow(2,27));
+  step_code = static_cast<unsigned int>(mpUserParameters->mDeltaFrequency/(mpUserParameters->mRefClockFrequency/4)*pow(2,27));
 
   f1 = (step_code >> 16) & 0xff;
   f2 = (step_code >> 8) & 0xff;
@@ -68,7 +68,7 @@ void Ad5933::writeDeltaFrequency()
 void Ad5933::writeNumSettlingTimeCycles()
 {
   uint8_t multiplier;
-  switch (msSweepParameters.mDdsSettlingTimeCycles)
+  switch (mpUserParameters->mDdsSettlingTimeCycles)
   {
   case DEFAULT_X1:
     multiplier = 1;
@@ -83,8 +83,8 @@ void Ad5933::writeNumSettlingTimeCycles()
     break;
   }
 
-  uint8_t msb = (multiplier << 3) | ( (msSweepParameters.mNumberSettlingTimeCycles >> 8) & 0xff );
-  uint8_t lsb = msSweepParameters.mNumberSettlingTimeCycles & 0xff;
+  uint8_t msb = (multiplier << 3) | ( (mpUserParameters->mNumberSettlingTimeCycles >> 8) & 0xff );
+  uint8_t lsb = mpUserParameters->mNumberSettlingTimeCycles & 0xff;
 
   regWrite(AD5933_NUMB_SETT_MSB, msb);
   regWrite(AD5933_NUMB_SETT_LSB, lsb);
@@ -103,7 +103,7 @@ void Ad5933::writeSystemClock()
   uint8_t control_reg_lsb = 0;
   regRead(AD5933_CTRL_REG_LSB, &control_reg_lsb);
   
-  switch (msSystemParameters.mClockConfiguration)
+  switch (mpUserParameters->mClockConfiguration)
   {
   case EXTERNAL_CLOCK:
     (control_reg_lsb &= ~MASK_CTRL_SYS_CLK_FIELD) |= MASK_CTRL_EXT_SYS_CLK;
@@ -123,7 +123,7 @@ void Ad5933::writeOutputExcitation()
 {
   uint8_t control_reg_msb = 0;
   regRead(AD5933_CTRL_REG_MSB, &control_reg_msb);
-  switch (msSystemParameters.mOutputExcitation)
+  switch (mpUserParameters->mOutputExcitation)
   {
   case RANGE_2VPP:
     (control_reg_msb &= ~MASK_CTRL_OUT_V_RANGE) |= MASK_CTRL_2_V_PP;
@@ -148,7 +148,7 @@ void Ad5933::writePgaControl()
 {
   uint8_t control_reg_msb = 0;
   regRead(AD5933_CTRL_REG_MSB, &control_reg_msb);
-  switch (msSystemParameters.mPgaControl)
+  switch (mpUserParameters->mPgaControl)
   {
   case GAIN_X1:
     (control_reg_msb &= ~MASK_CTRL_PGA_FIELD) |= MASK_CTRL_PGA_X1;
@@ -165,7 +165,6 @@ void Ad5933::writePgaControl()
 
 void Ad5933::writeFunction(Ad5933Function_t function)
 {
-  mFunction = function;
   uint8_t control_reg_msb = 0;
   regRead(AD5933_CTRL_REG_MSB, &control_reg_msb);
   switch (function)
@@ -256,19 +255,19 @@ void Ad5933::readImpedance()
 
   mcImpedData.m = module;
   mcImpedData.phase = phase;
-  if (msCalibrationParameters.mIsGainFactorCalculated)
+  if (mIsGainFactorCalculated)
   {
-    switch (msCalibrationParameters.mCalibrationMode)
+    switch (mpUserParameters->mCalibrationMode)
     {
     case CalibrationMode_t::MID_POINT:
     {
-      mcImpedData.magnitude = 1/(module*msCalibrationParameters.mGainFactor);
+      mcImpedData.magnitude = 1/(module*mGainFactor);
       break;
     }
     case CalibrationMode_t::MULTI_POINT:
     {
-      double pointGainFactor = msCalibrationParameters.mGainFactor + msCalibrationParameters.mDeltaGainFactorRate*(mcImpedData.frequency - msSweepParameters.mStartFrequency);
-      mcImpedData.magnitude = 1/(module*msCalibrationParameters.mGainFactor);
+      double pointGainFactor = mGainFactor + mDeltaGainFactorRate*(mcImpedData.frequency - mpUserParameters->mStartFrequency);
+      mcImpedData.magnitude = 1/(module*mGainFactor);
       break;
     }
     default:
@@ -282,7 +281,7 @@ void Ad5933::readImpedance()
 }
 // Public methods
 
-void Ad5933::init(unsigned short vid, unsigned short pid)
+void Ad5933::connect(unsigned short vid, unsigned short pid)
 {
   int res;
   res = cyusb_open(vid, pid);
@@ -297,12 +296,18 @@ void Ad5933::init(unsigned short vid, unsigned short pid)
 
   if(res == 0)
   {
-    mIsInit = true;
+    mIsFirmwareDownloaded = true;
   }
   else
   {
     throw CyusbError("Unable to download firmware, cyusb_download_fx2: " + std::to_string(res) + "\n");
   }
+}
+
+void Ad5933::init(UserParameters_st* pUserParameters)
+{
+  mpUserParameters = pUserParameters;
+  mIsInit = true;
 }
 
 void Ad5933::deinit()
@@ -318,8 +323,12 @@ void Ad5933::deinit()
   }
 }
 
-void Ad5933::readTemperature()
+Temperature_t Ad5933::readTemperature()
 {
+  
+  TemperatureRaw_st temperatureRaw;
+  Temperature_t temperature;
+  
   uint16_t temp = 0x0;
   uint8_t t0 = 0;
   uint8_t t1 = 0;
@@ -330,13 +339,15 @@ void Ad5933::readTemperature()
   int i = 0;
   readStatus();
   pollStatus(100, 1000, MASK_STS_TEMP_VALID);
-  regRead(AD5933_TEMP_DATA_MSB, &msTemperatureRaw.temp_msb);
-  regRead(AD5933_TEMP_DATA_LSB, &msTemperatureRaw.temp_lsb);
+  regRead(AD5933_TEMP_DATA_MSB, &temperatureRaw.temp_msb);
+  regRead(AD5933_TEMP_DATA_LSB, &temperatureRaw.temp_lsb);
 
-  if (msTemperatureRaw.temp_msb >> 5)
-    mTemperature = ((((msTemperatureRaw.temp_msb & 0xff) << 8) | (msTemperatureRaw.temp_lsb & 0xff)) - 16384) >> 5;
+  if (temperatureRaw.temp_msb >> 5)
+    temperature = ((((temperatureRaw.temp_msb & 0xff) << 8) | (temperatureRaw.temp_lsb & 0xff)) - 16384) >> 5;
   else
-    mTemperature = (((msTemperatureRaw.temp_msb & 0xff) << 8) |  (msTemperatureRaw.temp_lsb & 0xff)) >> 5;
+    temperature = (((temperatureRaw.temp_msb & 0xff) << 8) | (temperatureRaw.temp_lsb & 0xff)) >> 5;
+  
+  return temperature;
 }
 
 void Ad5933::programDeviceRegisters()
@@ -348,6 +359,7 @@ void Ad5933::programDeviceRegisters()
   writeSystemClock();
   writeOutputExcitation();
   writePgaControl();
+  mAreRegistersProgrammed = true;
 }
 
 void Ad5933::startSweep()
@@ -359,12 +371,10 @@ void Ad5933::startSweep()
 
   unsigned int i = 0;
   readStatus();
-  printf("calibrated: %d\n", msCalibrationParameters.mIsGainFactorCalculated);
-  printf("gf: %.10e\n", msCalibrationParameters.mGainFactor);
   while ((getStatus() & MASK_STS_FRQ_SWP_DONE) != MASK_STS_FRQ_SWP_DONE)
   {
     pollStatus(100, 1000, MASK_STS_IMPED_VALID);
-    mcImpedData.frequency = msSweepParameters.mStartFrequency + msSweepParameters.mDeltaFrequency*i;
+    mcImpedData.frequency = mpUserParameters->mStartFrequency + mpUserParameters->mDeltaFrequency*i;
     readImpedance();
     printf("%d\n", i);
     mImpedanceDataVector.push_back(mcImpedData);
@@ -384,15 +394,15 @@ void Ad5933::doCalibration()
   ImpedData_ct midpointImpedance;
   ImpedData_ct startpointImpedance;
   ImpedData_ct endpointImpedance;
-  switch (msCalibrationParameters.mCalibrationCircuitType)
+  switch (mpUserParameters->mCalibrationCircuitType)
   case CalibrationCircuitType_t::RES_ONLY:
   {
-    switch (msCalibrationParameters.mCalibrationMode)
+    switch (mpUserParameters->mCalibrationMode)
     {
     case CalibrationMode_t::MID_POINT :
     {
       midpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()/2)];
-      msCalibrationParameters.mGainFactor = 1/(midpointImpedance.m * msCalibrationParameters.mR1);
+      mGainFactor = 1/(midpointImpedance.m * mpUserParameters->mR1);
       break;
     }
     case CalibrationMode_t::MULTI_POINT:
@@ -400,10 +410,10 @@ void Ad5933::doCalibration()
       startpointImpedance = mImpedanceDataVector[1]; // sometimes first sample may not be reliable
       endpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()-1)];
       //endpointImpedance = mImpedanceDataVector[2];
-      double startpointGf = 1/(startpointImpedance.m * msCalibrationParameters.mR1);
-      double endpointGf = 1/(endpointImpedance.m * msCalibrationParameters.mR1);
-      msCalibrationParameters.mGainFactor = startpointGf;
-      msCalibrationParameters.mDeltaGainFactorRate = (endpointGf - startpointGf)/(endpointImpedance.frequency - startpointImpedance.frequency);
+      double startpointGf = 1/(startpointImpedance.m * mpUserParameters->mR1);
+      double endpointGf = 1/(endpointImpedance.m * mpUserParameters->mR1);
+      mGainFactor = startpointGf;
+      mDeltaGainFactorRate = (endpointGf - startpointGf)/(endpointImpedance.frequency - startpointImpedance.frequency);
       break;
     }
     default:
@@ -420,14 +430,14 @@ void Ad5933::doCalibration()
     throw std::invalid_argument("Unknown calibration circuit type.");
     break;
   }
-  msCalibrationParameters.mIsGainFactorCalculated = true;
+  mIsGainFactorCalculated = true;
 }
 
-void Ad5933::saveData()
+void Ad5933::saveData(const char* filename)
 {
   FILE *fd;
 
-	if((fd = fopen("imped_data.csv", "a+")) == NULL)
+	if((fd = fopen(filename, "a+")) == NULL)
 	{
 		throw std::runtime_error("Error opening file for writing!\n");
 	}

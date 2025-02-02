@@ -12,7 +12,7 @@ int main()
 
   Ad5933 ad5933;
 
-  ad5933.init(VID, PID);
+  ad5933.connect(VID, PID);
 
   fprintf(stdout, "Initialization completed.\n\n");
 
@@ -20,24 +20,28 @@ int main()
   
   Temperature_t temp = 0;
 
-  ad5933.readTemperature();
-  temp = ad5933.getTemperature();
+  temp = ad5933.readTemperature();
   fprintf(stdout, "Read temperature: %f °C\n", temp);
   sleep(1);
+ 
+  UserParameters_st userParameters
+  {
+    13000000,
+    3500,     // start frequency
+    50,       // delta frequency 
+    100,      // number of increments
+    50,       // number of settling time cycles
+    DdsSettlingTimeCycles_t::DEFAULT_X1,
+    ClockConfiguration_t::EXTERNAL_CLOCK,
+    OutputExcitation_t::RANGE_1VPP,
+    PgaControl_t::GAIN_X1,
+    CalibrationCircuitType_t::RES_ONLY,
+    CalibrationMode_t::MID_POINT,
+    10000,
+  };
   
-  // settings
-  ad5933.setStartFrequency(3500);
-  ad5933.setDeltaFrequency(50);
-  ad5933.setNumberOfIncrements(100);
-  ad5933.setNumberSettlingTimeCycles(50);
-  ad5933.setRefClockFrequency(16000000);
-  ad5933.setClockConfiguration(ClockConfiguration_t::EXTERNAL_CLOCK);
-  ad5933.setOutputExcitation(OutputExcitation_t::RANGE_1VPP);
-  ad5933.setPgaControl(PgaControl_t::GAIN_X1);
-  ad5933.setCalibrationCircuitType(CalibrationCircuitType_t::RES_ONLY);
-  ad5933.setR1(10000);
-  ad5933.setDdsSettlingTimeCycles(DdsSettlingTimeCycles_t::DEFAULT_X1);
-  ad5933.setCalibrationMode(CalibrationMode_t::MID_POINT);
+  // initialize device parameters
+  ad5933.init(&userParameters);
 
   // program device registers
   ad5933.programDeviceRegisters();
@@ -50,7 +54,7 @@ int main()
   fprintf(stdout, "Start sweep\n");
   ad5933.programDeviceRegisters();
   ad5933.startSweep();
-  ad5933.saveData();
+  ad5933.saveData("captured_data.csv");
   ad5933.deinit();
   return 0;
 }
