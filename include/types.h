@@ -187,6 +187,42 @@ typedef double GainFactor_t;
 typedef double Temperature_t;
 typedef uint8_t Status_t;
 
+// SWEEP PARAMETERS
+struct SweepParameters_st
+{
+  Frequency_t mRefClockFrequency; // Hz
+  Frequency_t mStartFrequency; // Hz
+  Frequency_t mDeltaFrequency; // Hz
+  unsigned int mNumberOfIncrements; // 9 bits
+  unsigned int mNumberSettlingTimeCycles;
+  DdsSettlingTimeCycles_t mDdsSettlingTimeCycles;
+};
+
+
+// SYSTEM
+struct SystemParameters_st
+{
+  ClockConfiguration_t mClockConfiguration;
+  OutputExcitation_t mOutputExcitation;
+  PgaControl_t mPgaControl;
+  bool mAreRegistersProgrammed;
+};
+
+
+// CALIBRATION IMPEDANCE
+struct CalibrationParameters_st
+{
+  CalibrationCircuitType_t mCalibrationCircuitType;
+  CalibrationMode_t mCalibrationMode;
+  ResistorValue_t mR1;
+  ResistorValue_t mR2;
+  CapacitorValue_t mC1;
+  GainFactor_t mGainFactor;
+  double mDeltaGainFactorRate;
+  bool mIsGainFactorCalculated;
+};
+
+
 class CyusbError : public std::runtime_error {
 public:
   CyusbError(const std::string& message) : std::runtime_error(message) {}

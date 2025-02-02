@@ -22,43 +22,8 @@ private:
   Ad5933Function_t mFunction;
   std::vector<ImpedData_ct> mImpedanceDataVector;
 
-  // SWEEP PARAMETERS
-  struct SweepParameters_st
-  {
-    Frequency_t mRefClockFrequency; // Hz
-    Frequency_t mStartFrequency; // Hz
-    Frequency_t mDeltaFrequency; // Hz
-    unsigned int mNumberOfIncrements; // 9 bits
-    unsigned int mNumberSettlingTimeCycles;
-    DdsSettlingTimeCycles_t mDdsSettlingTimeCycles;
-  };
-
-  SweepParameters_st msSweepParameters;
-
-  // SYSTEM
-  struct SystemParameters_st
-  {
-    ClockConfiguration_t mClockConfiguration;
-    OutputExcitation_t mOutputExcitation;
-    PgaControl_t mPgaControl;
-    bool mAreRegistersProgrammed;
-  };
-
   SystemParameters_st msSystemParameters;
-
-  // CALIBRATION IMPEDANCE
-  struct CalibrationParameters_st
-  {
-    CalibrationCircuitType_t mCalibrationCircuitType;
-    CalibrationMode_t mCalibrationMode;
-    ResistorValue_t mR1;
-    ResistorValue_t mR2;
-    CapacitorValue_t mC1;
-    GainFactor_t mGainFactor;
-    double mDeltaGainFactorRate;
-    bool mIsGainFactorCalculated;
-  };
-
+  SweepParameters_st msSweepParameters;
   CalibrationParameters_st msCalibrationParameters;
 
   TemperatureRaw_st msTemperatureRaw;
