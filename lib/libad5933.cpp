@@ -305,26 +305,28 @@ void Ad5933::connect(unsigned short vid, unsigned short pid)
   }
 }
 
-void Ad5933::init(CalibrationParameters_st calibrationParameters, SystemParameters_st systemParameters, SweepParameters_st sweepParameters)
+void Ad5933::init(UserParameters_st userParameters)
 {
-  
+    
   // Set sweep parameters
-  setRefClockFrequency(sweepParameters.mRefClockFrequency); 
-  setDeltaFrequency(sweepParameters.mDeltaFrequency);
-  setNumberOfIncrements(sweepParameters.mNumberOfIncrements);
-  setDdsSettlingTimeCycles(sweepParameters.mDdsSettlingTimeCycles);
+  setRefClockFrequency(userParameters.mRefClockFrequency); 
+  setStartFrequency(userParameters.mStartFrequency);
+  setDeltaFrequency(userParameters.mDeltaFrequency);
+  setNumberOfIncrements(userParameters.mNumberOfIncrements);
+  setNumberSettlingTimeCycles(userParameters.mNumberSettlingTimeCycles);
+  setDdsSettlingTimeCycles(userParameters.mDdsSettlingTimeCycles);
 
   // Set system parameters
-  setClockConfiguration(systemParameters.mClockConfiguration);
-  setOutputExcitation(systemParameters.mOutputExcitation);
-  setPgaControl(systemParameters.mPgaControl);
+  setClockConfiguration(userParameters.mClockConfiguration);
+  setOutputExcitation(userParameters.mOutputExcitation);
+  setPgaControl(userParameters.mPgaControl);
 
   // Set calibration parameters
-  setCalibrationCircuitType(calibrationParameters.mCalibrationCircuitType);
-  setCalibrationMode(calibrationParameters.mCalibrationMode);
-  setR1(calibrationParameters.mR1);
-  setR2(calibrationParameters.mR2);
-  setC1(calibrationParameters.mC1);
+  setCalibrationCircuitType(userParameters.mCalibrationCircuitType);
+  setCalibrationMode(userParameters.mCalibrationMode);
+  setR1(userParameters.mR1);
+  setR2(userParameters.mR2);
+  setC1(userParameters.mC1);
 }
 
 void Ad5933::deinit()

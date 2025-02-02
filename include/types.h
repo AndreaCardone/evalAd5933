@@ -1,5 +1,5 @@
-#ifndef __TYPES_H
-#define __TYPES_H
+#ifndef __AD5933_TYPES_H
+#define __AD5933_TYPES_H
 
 #include <stdint.h>
 #include <iostream>
@@ -220,6 +220,30 @@ struct CalibrationParameters_st
   GainFactor_t mGainFactor;
   double mDeltaGainFactorRate;
   bool mIsGainFactorCalculated;
+};
+
+// USER PARAMETERS
+struct UserParameters_st
+{ 
+  // Sweep parameters
+  Frequency_t mRefClockFrequency; // Hz
+  Frequency_t mStartFrequency; // Hz
+  Frequency_t mDeltaFrequency; // Hz
+  unsigned int mNumberOfIncrements; // 9 bits
+  unsigned int mNumberSettlingTimeCycles;
+  DdsSettlingTimeCycles_t mDdsSettlingTimeCycles;
+ 
+  // System parameters
+  ClockConfiguration_t mClockConfiguration;
+  OutputExcitation_t mOutputExcitation;
+  PgaControl_t mPgaControl;
+  
+  // Calibration parameters
+  CalibrationCircuitType_t mCalibrationCircuitType;
+  CalibrationMode_t mCalibrationMode;
+  ResistorValue_t mR1;
+  ResistorValue_t mR2;
+  CapacitorValue_t mC1;
 };
 
 

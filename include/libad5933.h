@@ -196,7 +196,7 @@ public:
 
   // Device operations
   void connect(unsigned short vid, unsigned short pid); 
-  void init(CalibrationParameters_st calibrationParameters, SystemParameters_st systemParameters, SweepParameters_st sweepParameters);
+  void init(UserParameters_st& userParameters);
   void deinit();
   void readTemperature();
   void programDeviceRegisters();
