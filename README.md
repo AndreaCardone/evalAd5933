@@ -2,7 +2,7 @@
 
 The aim of this software is to provide an abstraction layer for the ad5933/ad5934 evaluation board
 
-To build this program are needed:
+To build this program the following libraries are needed:
 - **cyusb-linux** with libcyusb built, cyusb-linux should be placed in the parent folder of this project. 
 - **libusb-1.0**
 
