@@ -297,7 +297,7 @@ void Ad5933::init(unsigned short vid, unsigned short pid)
 
   if(res == 0)
   {
-    mIsInit = true;
+    mIsFirmwareDownloaded = true;
   }
   else
   {
