@@ -16,16 +16,14 @@ To build this program are needed:
 - **AcquisitionHelper**: helper object to capture and save data
 
 ## PROJECT STRUCTURE
-
+```
 MyProject/
 |-- CMakeLists.txt
 |-- src/
-|   |-- main.cpp      # The actual program using the library
+|   |-- main.cpp
 |-- lib/
 |   |-- libad5933.cpp
 |-- include/
 |   |-- libad5933.h
-|-- tests/
-|   |-- test_libad5933.cpp
-|-- googletest/        # The googletest source folder
-
+|   |-- ad5933types.h
+```
