@@ -305,6 +305,28 @@ void Ad5933::connect(unsigned short vid, unsigned short pid)
   }
 }
 
+void Ad5933::init(CalibrationParameters_st calibrationParameters, SystemParameters_st systemParameters, SweepParameters_st sweepParameters)
+{
+  
+  // Set sweep parameters
+  setRefClockFrequency(sweepParameters.mRefClockFrequency); 
+  setDeltaFrequency(sweepParameters.mDeltaFrequency);
+  setNumberOfIncrements(sweepParameters.mNumberOfIncrements);
+  setDdsSettlingTimeCycles(sweepParameters.mDdsSettlingTimeCycles);
+
+  // Set system parameters
+  setClockConfiguration(systemParameters.mClockConfiguration);
+  setOutputExcitation(systemParameters.mOutputExcitation);
+  setPgaControl(systemParameters.mPgaControl);
+
+  // Set calibration parameters
+  setCalibrationCircuitType(calibrationParameters.mCalibrationCircuitType);
+  setCalibrationMode(calibrationParameters.mCalibrationMode);
+  setR1(calibrationParameters.mR1);
+  setR2(calibrationParameters.mR2);
+  setC1(calibrationParameters.mC1);
+}
+
 void Ad5933::deinit()
 {
   cyusb_close();
