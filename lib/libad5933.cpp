@@ -314,6 +314,52 @@ void Ad5933::connect(unsigned short vid, unsigned short pid)
 
 void Ad5933::init(UserParameters_st* pUserParameters)
 {
+  if(pUserParameters == nullptr)
+  {
+    std::cerr << "Error: Pointer to struct is null!" << std::endl;
+    return;
+  }
+ 
+  if(pUserParameters->mRefClockFrequency > 0)
+  {
+    std::cerr << "Error: Reference clock frequency cannot be nagative!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mStartFrequency < 0 || pUserParameters->mStartFrequency > 100000)
+  {
+    std::cerr << "Error valid start frequency must be between 0 and 100 kHz!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mDeltaFrequency < 0 || pUserParameters->mDeltaFrequency > 100000)
+  {
+    std::cerr << "Error: Delta frequency must be between 0 and 100 kHz!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mNumberOfIncrements < 0 || pUserParameters->mNumberOfIncrements > 511)
+  {
+    std::cerr << "Error: Number of increments must be between 0 and 511 (9 bits)!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mNumberSettlingTimeCycles < 0 || pUserParameters->mNumberSettlingTimeCycles > 511)
+  {
+    std::cerr << "Error: Number of settling time cycles must be between 0 and 511 (9 bits)!" << std::endl;
+    return;
+  }
+  
+  if(pUserParameters->mCalibrationCircuitType != CalibrationCircuitType_t::RES_ONLY)
+  {
+    std::cerr << "Error: Calibration circuit type not supported!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mR1 < 0 || pUserParameters->mR1 > 1000000)
+  {
+    std::cerr << "Error: R1 must be between 0 and 1 MOhm!" << std::endl;
+  }
   mpUserParameters = pUserParameters;
   mIsInit = true;
 }
