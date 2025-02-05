@@ -462,7 +462,13 @@ void Ad5933::startSweep()
 
 void Ad5933::doCalibration()
 {
+  mIsGainFactorCalculated = false;
   assert(!mImpedanceDataVector.empty());
+  if(!mAreDataCaptured)
+  {
+    std::cerr << "Error: Cannot do calibration if data are not captured!" << std::endl;
+    return;
+  }
 
   ImpedData_ct midpointImpedance;
   ImpedData_ct startpointImpedance;
@@ -472,35 +478,28 @@ void Ad5933::doCalibration()
   {
     switch (mpUserParameters->mCalibrationMode)
     {
-    case CalibrationMode_t::MID_POINT :
-    {
-      midpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()/2)];
-      mGainFactor = 1/(midpointImpedance.m * mpUserParameters->mR1);
-      break;
-    }
-    case CalibrationMode_t::MULTI_POINT:
-    {
-      startpointImpedance = mImpedanceDataVector[1]; // sometimes first sample may not be reliable
-      endpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()-1)];
-      //endpointImpedance = mImpedanceDataVector[2];
-      double startpointGf = 1/(startpointImpedance.m * mpUserParameters->mR1);
-      double endpointGf = 1/(endpointImpedance.m * mpUserParameters->mR1);
-      mGainFactor = startpointGf;
-      mDeltaGainFactorRate = (endpointGf - startpointGf)/(endpointImpedance.frequency - startpointImpedance.frequency);
-      break;
-    }
-    default:
-      throw std::invalid_argument("Unknown calibration mode.");
+      case CalibrationMode_t::MID_POINT :
+      {
+        midpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()/2)];
+        mGainFactor = 1/(midpointImpedance.m * mpUserParameters->mR1);
+        break;
+      }
+      case CalibrationMode_t::MULTI_POINT:
+      {
+        startpointImpedance = mImpedanceDataVector[1]; // sometimes first sample may not be reliable
+        endpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()-1)];
+        double startpointGf = 1/(startpointImpedance.m * mpUserParameters->mR1);
+        double endpointGf = 1/(endpointImpedance.m * mpUserParameters->mR1);
+        mGainFactor = startpointGf;
+        mDeltaGainFactorRate = (endpointGf - startpointGf)/(endpointImpedance.frequency - startpointImpedance.frequency);
+        break;
+      }
     }
     break;
   case CalibrationCircuitType_t::CAP_ONLY:
   case CalibrationCircuitType_t::RES_CAP_SERIES:
   case CalibrationCircuitType_t::RES_CAP_PARALLEL:
   case CalibrationCircuitType_t::COMPLEX_CIRCUIT:
-    throw std::invalid_argument("Calibration circuit type not yet supported.");
-    break;
-  default:
-    throw std::invalid_argument("Unknown calibration circuit type.");
     break;
   }
   mIsGainFactorCalculated = true;
@@ -508,6 +507,12 @@ void Ad5933::doCalibration()
 
 void Ad5933::saveData(const char* filename)
 {
+  if(!mAreDataCaptured)
+  {
+    std::cerr << "Cannot save data if no data have been captured!" << sd::endl;
+    return;
+  }
+
   FILE *fd;
 
 	if((fd = fopen(filename, "a+")) == NULL)
