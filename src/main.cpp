@@ -41,7 +41,7 @@ int main()
   };
   
   // initialize device parameters
-  ad5933.init(&userParameters);
+  ad5933.setDeviceParameters(&userParameters);
 
   // program device registers
   ad5933.programDeviceRegisters();

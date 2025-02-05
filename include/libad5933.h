@@ -21,6 +21,7 @@ private:
   bool mIsInit;
   bool mIsFirmwareDownloaded;
   bool mAreRegistersProgrammed;
+  bool mAreDataCaptured;
   bool mIsGainFactorCalculated;
 
   double mGainFactor;
@@ -32,8 +33,8 @@ private:
   ImpedData_ct mcImpedData;
   ImpedanceDataVector_t mImpedanceDataVector;
 
-  inline int regWrite(uint8_t addr, uint8_t val);
-  inline int regRead(uint8_t reg, uint8_t *val);
+  inline void regWrite(uint8_t addr, uint8_t val);
+  inline void regRead(uint8_t reg, uint8_t *val);
   
   void writeStartFrequency();
   void writeDeltaFrequency();
@@ -44,10 +45,10 @@ private:
   void writePgaControl();
   void writeFunction(Ad5933Function_t function);
   
-  int readStatus();
+  void readStatus();
   void pollStatus(unsigned int interval, unsigned int maxIter, uint8_t mask);
   void readImpedance();
-  int reset();
+  void reset();
 
 public:
   Ad5933() :
@@ -57,6 +58,7 @@ public:
     mIsInit(false),
     mIsFirmwareDownloaded(false),
     mAreRegistersProgrammed(false),
+    mAreDataCaptured(false),
     mIsGainFactorCalculated(false),
     
     mGainFactor(0),
@@ -76,26 +78,6 @@ public:
       mpUserParameters = nullptr;
     }
   }
-
-  // Setter methods for SweepParameters
-  void setRefClockFrequency(Frequency_t frequency) {mpUserParameters->mRefClockFrequency = frequency; }
-  void setStartFrequency(Frequency_t frequency) { mpUserParameters->mStartFrequency = frequency; }
-  void setDeltaFrequency(Frequency_t frequency) { mpUserParameters->mDeltaFrequency = frequency; }
-  void setNumberOfIncrements(unsigned int increments) { mpUserParameters->mNumberOfIncrements = increments; }
-  void setNumberSettlingTimeCycles(unsigned int cycles) { mpUserParameters->mNumberSettlingTimeCycles = cycles; }
-  void setDdsSettlingTimeCycles(DdsSettlingTimeCycles_t cycles) { mpUserParameters->mDdsSettlingTimeCycles = cycles; }
-
-  // Setter methods for SystemParameters
-  void setClockConfiguration(ClockConfiguration_t config) { mpUserParameters->mClockConfiguration = config; }
-  void setOutputExcitation(OutputExcitation_t excitation) { mpUserParameters->mOutputExcitation = excitation; }
-  void setPgaControl(PgaControl_t control) { mpUserParameters->mPgaControl = control; }
-
-  // Setter methods for CalibrationParameters
-  void setCalibrationCircuitType(CalibrationCircuitType_t type) { mpUserParameters->mCalibrationCircuitType = type; }
-  void setCalibrationMode(CalibrationMode_t mode) { mpUserParameters->mCalibrationMode = mode; }
-  void setR1(ResistorValue_t r1) { mpUserParameters->mR1 = r1; }
-  void setR2(ResistorValue_t r2) { mpUserParameters->mR2 = r2; }
-  void setC1(CapacitorValue_t c1) { mpUserParameters->mC1 = c1; }
 
   // Getter methods for SweepParameters
   const Frequency_t& getRefClockFrequency() const { return mpUserParameters->mRefClockFrequency; }
@@ -127,7 +109,7 @@ public:
 
   // Device operations
   void connect(unsigned short vid, unsigned short pid); 
-  void init(UserParameters_st* userParameters);
+  void setDeviceParameters(UserParameters_st* userParameters);
   void deinit();
   Temperature_t readTemperature();
   void programDeviceRegisters();

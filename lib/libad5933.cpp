@@ -4,28 +4,36 @@
 
 // Private methods
 
-inline int Ad5933::regWrite(uint8_t addr, uint8_t val)
+inline void Ad5933::regWrite(uint8_t addr, uint8_t val)
 {
   uint8_t dum = val & 0xff;
-  return libusb_control_transfer(mpUsbHandle, 0x40, 0xde, 0x0d, val << 8 | addr, &dum, 1, 1000);
-};
-
-inline int Ad5933::regRead(uint8_t reg, uint8_t* val)
-{
-  return libusb_control_transfer(mpUsbHandle, 0xc0, 0xde, 0x0d, reg, val, 1, 1000);
-};
-
-int Ad5933::readStatus()
-{
-  return regRead(AD5933_STATUS_REG, &mStatus);
+  int res = libusb_control_transfer(mpUsbHandle, 0x40, 0xde, 0x0d, val << 8 | addr, &dum, 1, 1000);
+  if(res < 0)
+  {
+    throw std::runtime_error(libusb_strerror(res));
+  }
 }
 
-int Ad5933::reset()
+inline void Ad5933::regRead(uint8_t reg, uint8_t* val)
+{
+  int res = libusb_control_transfer(mpUsbHandle, 0xc0, 0xde, 0x0d, reg, val, 1, 1000);
+  if(res < 0)
+  {
+    throw std::runtime_error(libusb_strerror(res));
+  } 
+}
+
+void Ad5933::readStatus()
+{
+  regRead(AD5933_STATUS_REG, &mStatus);
+}
+
+void Ad5933::reset()
 {
   uint8_t ctrl_lsb = 0;
   regRead(AD5933_CTRL_REG_LSB, &ctrl_lsb);
   ctrl_lsb |= MASK_CTRL_RESET;
-  return regWrite(AD5933_CTRL_REG_LSB, ctrl_lsb);
+  regWrite(AD5933_CTRL_REG_LSB, ctrl_lsb);
 }
 
 void Ad5933::writeStartFrequency()
@@ -304,8 +312,56 @@ void Ad5933::connect(unsigned short vid, unsigned short pid)
   }
 }
 
-void Ad5933::init(UserParameters_st* pUserParameters)
+void Ad5933::setDeviceParameters(UserParameters_st* pUserParameters)
 {
+  mIsInit = false;
+  if(pUserParameters == nullptr)
+  {
+    std::cerr << "Error: Pointer to struct is null!" << std::endl;
+    return;
+  }
+ 
+  if(pUserParameters->mRefClockFrequency < 0)
+  {
+    std::cerr << "Error: Reference clock frequency cannot be nagative!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mStartFrequency < 0 || pUserParameters->mStartFrequency > 100000)
+  {
+    std::cerr << "Error valid start frequency must be between 0 and 100 kHz!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mDeltaFrequency < 0 || pUserParameters->mDeltaFrequency > 100000)
+  {
+    std::cerr << "Error: Delta frequency must be between 0 and 100 kHz!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mNumberOfIncrements < 0 || pUserParameters->mNumberOfIncrements > 511)
+  {
+    std::cerr << "Error: Number of increments must be between 0 and 511 (9 bits)!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mNumberSettlingTimeCycles < 0 || pUserParameters->mNumberSettlingTimeCycles > 511)
+  {
+    std::cerr << "Error: Number of settling time cycles must be between 0 and 511 (9 bits)!" << std::endl;
+    return;
+  }
+  
+  if(pUserParameters->mCalibrationCircuitType != CalibrationCircuitType_t::RES_ONLY)
+  {
+    std::cerr << "Error: Calibration circuit type not supported!" << std::endl;
+    return;
+  }
+
+  if(pUserParameters->mR1 < 0 || pUserParameters->mR1 > 1000000)
+  {
+    std::cerr << "Error: R1 must be between 0 and 1 MOhm!" << std::endl;
+  }
+
   mpUserParameters = pUserParameters;
   mIsInit = true;
 }
@@ -352,6 +408,14 @@ Temperature_t Ad5933::readTemperature()
 
 void Ad5933::programDeviceRegisters()
 {
+  mAreRegistersProgrammed = false;
+  
+  if(!mIsInit)
+  {
+    std::cerr << "Error: Cannot program device registers if register values are not set properly!" << std::endl;
+    return;
+  }
+
   writeStartFrequency();
   writeDeltaFrequency();
   writeNumberOfIncrements();
@@ -359,11 +423,19 @@ void Ad5933::programDeviceRegisters()
   writeSystemClock();
   writeOutputExcitation();
   writePgaControl();
+  
   mAreRegistersProgrammed = true;
 }
 
 void Ad5933::startSweep()
 {
+  mAreDataCaptured = false;
+  if(!mAreRegistersProgrammed)
+  {
+    std::cerr << "Error: Cannot start sweep if device registers are not programmed correctly" << std::endl;
+    return;
+  }
+
   mImpedanceDataVector.clear();
   writeFunction(Ad5933Function_t::STANDBY_MODE);
   writeFunction(Ad5933Function_t::INIT_WITH_START_FREQ);
@@ -385,11 +457,18 @@ void Ad5933::startSweep()
     i++;
   }
   writeFunction(Ad5933Function_t::POWER_DOWN_MODE);
+  mAreDataCaptured = true;
 }
 
 void Ad5933::doCalibration()
 {
+  mIsGainFactorCalculated = false;
   assert(!mImpedanceDataVector.empty());
+  if(!mAreDataCaptured)
+  {
+    std::cerr << "Error: Cannot do calibration if data are not captured!" << std::endl;
+    return;
+  }
 
   ImpedData_ct midpointImpedance;
   ImpedData_ct startpointImpedance;
@@ -399,35 +478,28 @@ void Ad5933::doCalibration()
   {
     switch (mpUserParameters->mCalibrationMode)
     {
-    case CalibrationMode_t::MID_POINT :
-    {
-      midpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()/2)];
-      mGainFactor = 1/(midpointImpedance.m * mpUserParameters->mR1);
-      break;
-    }
-    case CalibrationMode_t::MULTI_POINT:
-    {
-      startpointImpedance = mImpedanceDataVector[1]; // sometimes first sample may not be reliable
-      endpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()-1)];
-      //endpointImpedance = mImpedanceDataVector[2];
-      double startpointGf = 1/(startpointImpedance.m * mpUserParameters->mR1);
-      double endpointGf = 1/(endpointImpedance.m * mpUserParameters->mR1);
-      mGainFactor = startpointGf;
-      mDeltaGainFactorRate = (endpointGf - startpointGf)/(endpointImpedance.frequency - startpointImpedance.frequency);
-      break;
-    }
-    default:
-      throw std::invalid_argument("Unknown calibration mode.");
+      case CalibrationMode_t::MID_POINT :
+      {
+        midpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()/2)];
+        mGainFactor = 1/(midpointImpedance.m * mpUserParameters->mR1);
+        break;
+      }
+      case CalibrationMode_t::MULTI_POINT:
+      {
+        startpointImpedance = mImpedanceDataVector[1]; // sometimes first sample may not be reliable
+        endpointImpedance = mImpedanceDataVector[static_cast<int>(mImpedanceDataVector.size()-1)];
+        double startpointGf = 1/(startpointImpedance.m * mpUserParameters->mR1);
+        double endpointGf = 1/(endpointImpedance.m * mpUserParameters->mR1);
+        mGainFactor = startpointGf;
+        mDeltaGainFactorRate = (endpointGf - startpointGf)/(endpointImpedance.frequency - startpointImpedance.frequency);
+        break;
+      }
     }
     break;
   case CalibrationCircuitType_t::CAP_ONLY:
   case CalibrationCircuitType_t::RES_CAP_SERIES:
   case CalibrationCircuitType_t::RES_CAP_PARALLEL:
   case CalibrationCircuitType_t::COMPLEX_CIRCUIT:
-    throw std::invalid_argument("Calibration circuit type not yet supported.");
-    break;
-  default:
-    throw std::invalid_argument("Unknown calibration circuit type.");
     break;
   }
   mIsGainFactorCalculated = true;
@@ -435,6 +507,12 @@ void Ad5933::doCalibration()
 
 void Ad5933::saveData(const char* filename)
 {
+  if(!mAreDataCaptured)
+  {
+    std::cerr << "Cannot save data if no data have been captured!" << std::endl;
+    return;
+  }
+
   FILE *fd;
 
 	if((fd = fopen(filename, "a+")) == NULL)
