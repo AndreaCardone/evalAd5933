@@ -312,7 +312,7 @@ void Ad5933::connect(unsigned short vid, unsigned short pid)
   }
 }
 
-void Ad5933::init(UserParameters_st* pUserParameters)
+void Ad5933::setDeviceParameters(UserParameters_st* pUserParameters)
 {
   mIsInit = false;
   if(pUserParameters == nullptr)

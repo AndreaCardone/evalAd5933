@@ -109,7 +109,7 @@ public:
 
   // Device operations
   void connect(unsigned short vid, unsigned short pid); 
-  void init(UserParameters_st* userParameters);
+  void setDeviceParameters(UserParameters_st* userParameters);
   void deinit();
   Temperature_t readTemperature();
   void programDeviceRegisters();
