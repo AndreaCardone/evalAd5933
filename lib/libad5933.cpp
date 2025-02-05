@@ -314,6 +314,7 @@ void Ad5933::connect(unsigned short vid, unsigned short pid)
 
 void Ad5933::init(UserParameters_st* pUserParameters)
 {
+  mIsInit = false;
   if(pUserParameters == nullptr)
   {
     std::cerr << "Error: Pointer to struct is null!" << std::endl;
@@ -360,6 +361,7 @@ void Ad5933::init(UserParameters_st* pUserParameters)
   {
     std::cerr << "Error: R1 must be between 0 and 1 MOhm!" << std::endl;
   }
+
   mpUserParameters = pUserParameters;
   mIsInit = true;
 }
@@ -406,6 +408,14 @@ Temperature_t Ad5933::readTemperature()
 
 void Ad5933::programDeviceRegisters()
 {
+  mAreRegistersProgrammed = false;
+  
+  if(!mIsInit)
+  {
+    std::cerr << "Error: Cannot program device registers if register values are not set properly!" << std::endl;
+    return;
+  }
+
   writeStartFrequency();
   writeDeltaFrequency();
   writeNumberOfIncrements();
@@ -413,6 +423,7 @@ void Ad5933::programDeviceRegisters()
   writeSystemClock();
   writeOutputExcitation();
   writePgaControl();
+  
   mAreRegistersProgrammed = true;
 }
 
