@@ -4,28 +4,36 @@
 
 // Private methods
 
-inline int Ad5933::regWrite(uint8_t addr, uint8_t val)
+inline void Ad5933::regWrite(uint8_t addr, uint8_t val)
 {
   uint8_t dum = val & 0xff;
-  return libusb_control_transfer(mpUsbHandle, 0x40, 0xde, 0x0d, val << 8 | addr, &dum, 1, 1000);
-};
-
-inline int Ad5933::regRead(uint8_t reg, uint8_t* val)
-{
-  return libusb_control_transfer(mpUsbHandle, 0xc0, 0xde, 0x0d, reg, val, 1, 1000);
-};
-
-int Ad5933::readStatus()
-{
-  return regRead(AD5933_STATUS_REG, &mStatus);
+  int res = libusb_control_transfer(mpUsbHandle, 0x40, 0xde, 0x0d, val << 8 | addr, &dum, 1, 1000);
+  if(res < 0)
+  {
+    throw std::runtime_error(libusb_strerror(res));
+  }
 }
 
-int Ad5933::reset()
+inline void Ad5933::regRead(uint8_t reg, uint8_t* val)
+{
+  int res = libusb_control_transfer(mpUsbHandle, 0xc0, 0xde, 0x0d, reg, val, 1, 1000);
+  if(res < 0)
+  {
+    throw std::runtime_error(libusb_strerror(res));
+  } 
+}
+
+void Ad5933::readStatus()
+{
+  regRead(AD5933_STATUS_REG, &mStatus);
+}
+
+void Ad5933::reset()
 {
   uint8_t ctrl_lsb = 0;
   regRead(AD5933_CTRL_REG_LSB, &ctrl_lsb);
   ctrl_lsb |= MASK_CTRL_RESET;
-  return regWrite(AD5933_CTRL_REG_LSB, ctrl_lsb);
+  regWrite(AD5933_CTRL_REG_LSB, ctrl_lsb);
 }
 
 void Ad5933::writeStartFrequency()

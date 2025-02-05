@@ -32,8 +32,8 @@ private:
   ImpedData_ct mcImpedData;
   ImpedanceDataVector_t mImpedanceDataVector;
 
-  inline int regWrite(uint8_t addr, uint8_t val);
-  inline int regRead(uint8_t reg, uint8_t *val);
+  inline void regWrite(uint8_t addr, uint8_t val);
+  inline void regRead(uint8_t reg, uint8_t *val);
   
   void writeStartFrequency();
   void writeDeltaFrequency();
@@ -44,10 +44,10 @@ private:
   void writePgaControl();
   void writeFunction(Ad5933Function_t function);
   
-  int readStatus();
+  void readStatus();
   void pollStatus(unsigned int interval, unsigned int maxIter, uint8_t mask);
   void readImpedance();
-  int reset();
+  void reset();
 
 public:
   Ad5933() :
