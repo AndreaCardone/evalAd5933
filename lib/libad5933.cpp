@@ -321,7 +321,7 @@ void Ad5933::setDeviceParameters(UserParameters_st* pUserParameters)
     return;
   }
  
-  if(pUserParameters->mRefClockFrequency > 0)
+  if(pUserParameters->mRefClockFrequency < 0)
   {
     std::cerr << "Error: Reference clock frequency cannot be nagative!" << std::endl;
     return;
