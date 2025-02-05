@@ -429,6 +429,13 @@ void Ad5933::programDeviceRegisters()
 
 void Ad5933::startSweep()
 {
+  mAreDataCaptured = false;
+  if(!mAreRegistersProgrammed)
+  {
+    std::cerr << "Error: Cannot start sweep if device registers are not programmed correctly" << std::endl;
+    return;
+  }
+
   mImpedanceDataVector.clear();
   writeFunction(Ad5933Function_t::STANDBY_MODE);
   writeFunction(Ad5933Function_t::INIT_WITH_START_FREQ);
@@ -450,6 +457,7 @@ void Ad5933::startSweep()
     i++;
   }
   writeFunction(Ad5933Function_t::POWER_DOWN_MODE);
+  mAreDataCaptured = true;
 }
 
 void Ad5933::doCalibration()

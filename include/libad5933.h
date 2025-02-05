@@ -21,6 +21,7 @@ private:
   bool mIsInit;
   bool mIsFirmwareDownloaded;
   bool mAreRegistersProgrammed;
+  bool mAreDataCaptured;
   bool mIsGainFactorCalculated;
 
   double mGainFactor;
@@ -57,6 +58,7 @@ public:
     mIsInit(false),
     mIsFirmwareDownloaded(false),
     mAreRegistersProgrammed(false),
+    mAreDataCaptured(false),
     mIsGainFactorCalculated(false),
     
     mGainFactor(0),
