@@ -509,7 +509,7 @@ void Ad5933::saveData(const char* filename)
 {
   if(!mAreDataCaptured)
   {
-    std::cerr << "Cannot save data if no data have been captured!" << sd::endl;
+    std::cerr << "Cannot save data if no data have been captured!" << std::endl;
     return;
   }
 
