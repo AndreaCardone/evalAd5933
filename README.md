@@ -252,3 +252,9 @@ dev.setProgressCallback([](unsigned int i, const ImpedData_ct& s) {
   the third argument to `connect()` to override.
 - **Linux only**, tested with libusb-1.0 + cyusb_linux. Windows / macOS are
   out of scope.
+
+---
+
+## License
+
+BSD 3-Clause License. See [LICENSE](LICENSE).
