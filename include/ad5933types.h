@@ -65,8 +65,6 @@
 #define MAX_INCREMENT_NUMBER  511
 #define MAX_SETTL_TIME_CYCLES 511
 
-char const* AD5933_FW_PATH = "../cypressfw/AD5933_34FW.hex";
-
 /**
  * \brief Structure to hold raw temperature data.
  */
