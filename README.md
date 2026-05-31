@@ -1,5 +1,7 @@
 # AD5933 Evaluation Board Software
 
+**Version 0.1.0**
+
 A C++17 host-side driver and CLI for the Analog Devices **EVAL-AD5933 / EVAL-AD5934**
 impedance analyzer evaluation boards. The library wraps the Cypress FX2 USB
 bridge (via `libcyusb` / `libusb-1.0`), downloads the board firmware, and
